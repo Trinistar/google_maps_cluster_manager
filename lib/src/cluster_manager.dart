@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui';
@@ -5,16 +6,30 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_cluster_manager/google_maps_cluster_manager.dart';
-import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart' as gMaps;
+import 'package:google_maps_flutter/google_maps_flutter.dart' as googleMaps;
+import 'package:apple_maps_flutter/apple_maps_flutter.dart' as appleMaps;
 
 class ClusterManager<T extends ClusterItem> {
-  ClusterManager(this._items, this.updateMarkers,
+  ClusterManager(this._items, this.updateMarkers, controller,
       {Future<Marker> Function(Cluster<T>)? markerBuilder,
       this.levels = const [1, 4.25, 6.75, 8.25, 11.5, 14.5, 16.0, 16.5, 20.0],
       this.extraPercent = 0.5,
       this.stopClusteringZoom})
       : this.markerBuilder = markerBuilder ?? _basicMarkerBuilder,
-        assert(levels.length <= precision);
+        assert(levels.length <= precision) {
+          if (controller.runtimeType == googleMaps.GoogleMapController) {
+      this.googleController = controller;
+    } else if (controller.runtimeType == appleMaps.AppleMapController) {
+      this.appleController = controller;
+    }
+        }
+
+  //PlatformMapController controller;
+
+  appleMaps.AppleMapController? appleController;
+  googleMaps.GoogleMapController? googleController;
 
   /// Method to build markers
   final Future<Marker> Function(Cluster<T>) markerBuilder;
@@ -49,7 +64,7 @@ class ClusterManager<T extends ClusterItem> {
   /// Set Google Map Id for the cluster manager
   void setMapId(int mapId, {bool withUpdate = true}) async {
     _mapId = mapId;
-    _zoom = await GoogleMapsFlutterPlatform.instance.getZoomLevel(mapId: mapId);
+    _zoom = await gMaps.GoogleMapsFlutterPlatform.instance.getZoomLevel(mapId: mapId);
     if (withUpdate) updateMap();
   }
 
@@ -91,8 +106,19 @@ class ClusterManager<T extends ClusterItem> {
   Future<List<Cluster<T>>> getMarkers() async {
     if (_mapId == null) return List.empty();
 
-    final LatLngBounds mapBounds = await GoogleMapsFlutterPlatform.instance
-        .getVisibleRegion(mapId: _mapId!);
+    /* final LatLngBounds mapBounds = await gMaps.GoogleMapsFlutterPlatform.instance
+        .getVisibleRegion(mapId: _mapId!) as LatLngBounds; */
+
+    LatLngBounds mapBounds;
+    if (Platform.isIOS) {
+      appleMaps.LatLngBounds appleBounds =
+          await this.appleController!.getVisibleRegion();
+      mapBounds = LatLngBounds(southwest: appleBounds.southwest as LatLng, northeast: appleBounds.northeast as LatLng);
+    } else {
+      googleMaps.LatLngBounds googleBounds =
+          await this.googleController!.getVisibleRegion();
+      mapBounds = LatLngBounds(southwest: googleBounds.southwest as LatLng, northeast: googleBounds.northeast as LatLng);
+    }
 
     final LatLngBounds inflatedBounds = _inflateBounds(mapBounds);
 

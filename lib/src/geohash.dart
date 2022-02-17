@@ -5,7 +5,8 @@
 
 import 'dart:math';
 
-import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+
 
 /// A collection of static functions to work with geohashes, as exlpained
 /// [here](https://en.wikipedia.org/wiki/Geohash)

@@ -1,5 +1,5 @@
 import 'package:google_maps_cluster_manager/google_maps_cluster_manager.dart';
-import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 abstract class ClusterItem {
   LatLng get location;
